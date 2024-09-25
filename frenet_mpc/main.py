@@ -31,7 +31,7 @@ def main():
     vehicle = VehicleModel()
     
     # Initialize MPC Controller
-    mpc = MPCController(path_planner, vehicle)
+    mpc = MPCController(path_planner, vehicle, N=50)
     
     # Simulation Parameters
     sim_time = 20  # seconds
@@ -52,6 +52,7 @@ def main():
 
     # Storage for Simulation Data
     state_history = []
+    frenet_state_history = []
     control_history = []
     time_history = []
 
@@ -79,19 +80,22 @@ def main():
                
         # Store Data for Visualization
         state_history.append(x0_global.copy())
+        frenet_state_history.append(frenet_state_updated.copy())
         control_history.append([delta, a])
         time_history.append(current_time)
+
 
         
     # Convert Histories to Numpy Arrays for Plotting
     state_history = np.array(state_history)
+    frenet_state_history = np.array(frenet_state_history)
     control_history = np.array(control_history)
     time_history = np.array(time_history)
     
     # Visualization
-    plot_results(x_ref, y_ref, state_history, control_history, time_history)
+    plot_results(x_ref, y_ref, frenet_state_history, state_history, control_history, time_history)
 
-def plot_results(x_ref, y_ref, state_history, control_history, time_history):
+def plot_results(x_ref, y_ref, frenet_state_history, state_history, control_history, time_history):
     plt.figure(figsize=(10, 6))
     plt.plot(x_ref, y_ref, 'r--', label='Reference Path')
     plt.plot(state_history[:, 0], state_history[:, 1], 'b-', label='Vehicle Path')
@@ -102,6 +106,7 @@ def plot_results(x_ref, y_ref, state_history, control_history, time_history):
     plt.grid(True)
     plt.show()
     
+
     plt.figure()
     plt.plot(time_history, control_history[:, 0], 'g-', label='Steering Angle [rad]')
     plt.plot(time_history, control_history[:, 1], 'm-', label='Acceleration [m/s²]')
@@ -111,6 +116,17 @@ def plot_results(x_ref, y_ref, state_history, control_history, time_history):
     plt.title('Control Inputs Over Time')
     plt.grid(True)
     plt.show()
+
+    plt.figure()
+    plt.plot(time_history, frenet_state_history[:, 0], 'b-', label='Lateral Offset [m]')
+    plt.plot(time_history, frenet_state_history[:, 1], 'g-', label='Orientation Error [rad]')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Frenet State variables')
+    plt.legend()
+    plt.title('Frenet State Variables Over Time')
+    plt.grid(True)
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
