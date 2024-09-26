@@ -5,6 +5,7 @@ from scipy.optimize import minimize
 # Constants for vehicle dynamics
 dt = 0.1  # Time step
 L = 2.0   # Wheelbase length
+max_steering = np.pi / 4  # Maximum steering angle
 
 # Kinematic Bicycle Model
 def vehicle_model(state, u, dt):
