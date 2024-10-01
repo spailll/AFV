@@ -50,6 +50,8 @@ class RMPPIController:
         return np.array([v, omega])
 
     def simulate_control(self, lookahead_steps=5):
+        vehicle.cleanup()
+        time.sleep(0.25)
         plt.figure()
         plt.plot(self.path_x, self.path_y, 'r--', label='Target Path')  # Plot the target path
 
