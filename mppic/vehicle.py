@@ -2,6 +2,7 @@ import subprocess
 
 class Vehicle:
     def __init__(self):
+        self.L = 8.763  # Wheelbase length (m)
         self.processes = []  # List of processes for each motor
 
     def move(self, speed, delta):
@@ -22,8 +23,8 @@ class Vehicle:
         delta = max(-1.0, min(1.0, delta))
 
         # Calculate left and right wheel speeds for differential drive
-        left_speed = speed * (1.0 - delta)
-        right_speed = speed * (1.0 + delta)
+        left_speed = speed - ( delta * self.L / 2.0)
+        right_speed = speed + (delta * self.L / 2.0)
         # Normalize wheel speeds if they exceed the range [-1.0, 1.0]
         max_wheel_speed = max(abs(left_speed), abs(right_speed))
         if max_wheel_speed > 1.0:
