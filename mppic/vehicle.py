@@ -57,7 +57,6 @@ class Vehicle:
 
         # Call servo3.py for each motor, non-blocking
         self.processes = []
-        processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
-        processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
-        processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
-        return processes
+        self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        self.processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
