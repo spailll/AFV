@@ -23,8 +23,11 @@ class Vehicle:
         delta = max(-1.0, min(1.0, delta))
 
         # Calculate left and right wheel speeds for differential drive
-        left_speed = speed - ( delta * self.L / 2.0)
-        right_speed = speed + (delta * self.L / 2.0)
+        # left_speed = speed - ( delta * self.L / 2.0)
+        # right_speed = speed + (delta * self.L / 2.0)
+        left_speed = speed * (1 - delta) 
+        right_speed = speed * (1 + delta)
+        
         # Normalize wheel speeds if they exceed the range [-1.0, 1.0]
         max_wheel_speed = max(abs(left_speed), abs(right_speed))
         if max_wheel_speed > 1.0:
