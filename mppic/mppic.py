@@ -82,5 +82,7 @@ class RMPPIController:
 
             plt.pause(0.1)  # Update the plot in real-time
 
+        vehicle.cleanup()
+
         plt.legend()
         plt.show()  # Show the final plot at the end of the simulation

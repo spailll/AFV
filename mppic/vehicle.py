@@ -60,3 +60,17 @@ class Vehicle:
         self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
         self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
         self.processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+
+    def cleanup(self):
+        ssh_command_left = f"ssh pi@10.42.0.75 './servo3.py 0 90'"
+        ssh_command_right = f"ssh pi@10.42.0.75 './servo3.py 1 90'"
+        ssh_command_steer = f"ssh pi@10.42.0.75 './servo3.py 2 97'"
+        # print(ssh_command_left)
+        # print(ssh_command_right)
+        # print(ssh_command_steer)
+
+        # Call servo3.py for each motor, non-blocking
+        self.processes = []
+        self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        self.processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
