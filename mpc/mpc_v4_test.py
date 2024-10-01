@@ -24,6 +24,8 @@ def compute_desired_speed(x_ref, y_ref, v_max, v_min):
 
     return v_des
 
+
+
 def compute_frenet_state(x, y, theta, x_ref, y_ref, s_ref):
     # Compute the closest point on the path
     dx = x_ref - x

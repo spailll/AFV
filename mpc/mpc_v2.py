@@ -178,3 +178,4 @@ class MPC:
         x_pred = np.array(x_pred.full()).reshape(self.N + 1, self.NX)
 
         return u_opt, x_pred
+
