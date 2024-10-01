@@ -50,7 +50,7 @@ class RMPPIController:
         return np.array([v, omega])
 
     def simulate_control(self, lookahead_steps=5):
-        vehicle.cleanup()
+        self.vehicle.cleanup()
         time.sleep(0.25)
         plt.figure()
         plt.plot(self.path_x, self.path_y, 'r--', label='Target Path')  # Plot the target path
@@ -71,7 +71,7 @@ class RMPPIController:
                         self.vehicle.processes.remove(process)
                     print("Waiting for processes to complete...")
                 print("Waiting for processes to complete...")
-                
+
             # Move the vehicle based on the computed control inputs
             self.vehicle.move(control[0], control[1])
             print(control)
@@ -84,7 +84,7 @@ class RMPPIController:
 
             plt.pause(0.1)  # Update the plot in real-time
 
-        vehicle.cleanup()
+        self.vehicle.cleanup()
 
         plt.legend()
         plt.show()  # Show the final plot at the end of the simulation
