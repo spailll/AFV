@@ -31,14 +31,11 @@ class Vehicle:
             right_speed /= max_wheel_speed
 
         # Map wheel speeds to servo values (45 to 135)
-        left_servo_value = left_speed * 45 + 90
-        right_servo_value = right_speed * 45 + 90
+        left_servo_value = left_speed * 30 + 90
+        right_servo_value = right_speed * 30 + 90
 
-        left_servo_value = left_speed * 35 + 90
-        right_servo_value = right_speed * 35 + 90
-
-        left_servo_value = max(45, min(135, left_servo_value))
-        right_servo_value = max(45, min(135, right_servo_value))
+        left_servo_value = max(60, min(120, left_servo_value))
+        right_servo_value = max(60, min(120, right_servo_value))
 
         left_servo_value_int = int(round(left_servo_value))
         right_servo_value_int = int(round(right_servo_value))
