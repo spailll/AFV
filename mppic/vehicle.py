@@ -2,7 +2,7 @@ import subprocess
 
 class Vehicle:
     def __init__(self):
-        pass
+        self.processes = []  # List of processes for each motor
 
     def move(self, speed, delta):
         """
@@ -48,11 +48,16 @@ class Vehicle:
         steering_servo_value = max(67, min(127, steering_servo_value))
         steering_servo_value_int = int(round(steering_servo_value))
 
-        print(['ssh', 'pi@10.42.0.75', './servo3.py', '0', str(left_servo_value_int)])
-        print(['ssh', 'pi@10.42.0.75', './servo3.py', '1', str(right_servo_value_int)])
-        print(['ssh', 'pi@10.42.0.75','./servo3.py', '2', str(steering_servo_value_int)])
+        ssh_command_left = f"ssh pi@10.42.0.75 './servo3.py 0 {str(left_servo_value_int)}'"
+        ssh_command_right = f"ssh pi@10.42.0.75 './servo3.py 1 {str(right_servo_value_int)}'"
+        ssh_command_steer = f"ssh pi@10.42.0.75 './servo3.py 2 {str(steering_servo_value_int)}'"
+        # print(ssh_command_left)
+        # print(ssh_command_right)
+        # print(ssh_command_steer)
 
-        # Call servo3.py for each motor
-        # subprocess.run(['ssh', 'pi@10.42.0.75', './servo3.py', '0', str(left_servo_value_int)])    # Left wheel
-        # subprocess.run(['ssh', 'pi@10.42.0.75','./servo3.py', '1', str(right_servo_value_int)])   # Right wheel
-        # subprocess.run(['ssh', 'pi@10.42.0.75','./servo3.py', '2', str(steering_servo_value_int)])  # Steering (optional)
+        # Call servo3.py for each motor, non-blocking
+        self.processes = []
+        processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+        return processes

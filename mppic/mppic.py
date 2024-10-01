@@ -61,6 +61,13 @@ class RMPPIController:
             # Apply feedback control to compute the velocities to move towards the lookahead target point
             control = self.feedback_control(self.state_real, target_point)
             
+            while processes:
+                for i, process in enumerate(self.vehicle.processes):
+                    return_code = process.poll()
+                    if return_code is not None:
+                        print(f"Process {i+1} completed with return code: {return_code}")
+                        processes.remove(process)
+
             # Move the vehicle based on the computed control inputs
             self.vehicle.move(control[0], control[1])
             print(control)
