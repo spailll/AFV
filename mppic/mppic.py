@@ -71,8 +71,8 @@ class RMPPIController:
                     if return_code is not None:
                         print(f"Process {i+1} completed with return code: {return_code}")
                         self.vehicle.processes.remove(process)
-                    print("Waiting for processes to complete...")
-                print("Waiting for processes to complete...")
+                #     print("Waiting for processes to complete...")
+                # print("Waiting for processes to complete...")
 
             # Move the vehicle based on the computed control inputs
             self.vehicle.move(control[0], control[1])

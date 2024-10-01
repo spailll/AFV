@@ -52,9 +52,9 @@ class Vehicle:
         ssh_command_left = f"ssh pi@10.42.0.75 './servo3.py 0 {str(left_servo_value_int)}'"
         ssh_command_right = f"ssh pi@10.42.0.75 './servo3.py 1 {str(right_servo_value_int)}'"
         ssh_command_steer = f"ssh pi@10.42.0.75 './servo3.py 2 {str(steering_servo_value_int)}'"
-        # print(ssh_command_left)
-        # print(ssh_command_right)
-        # print(ssh_command_steer)
+        print(ssh_command_left)
+        print(ssh_command_right)
+        print(ssh_command_steer)
 
         # Call servo3.py for each motor, non-blocking
         self.processes = []
