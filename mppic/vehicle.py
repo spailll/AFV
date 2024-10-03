@@ -1,77 +1,111 @@
 import subprocess
+import numpy as np
+import math
 
 class Vehicle:
     def __init__(self):
-        self.L = 8.763  # Wheelbase length (m)
-        self.processes = []  # List of processes for each motor
+        self.v_min = 0.0        # Minimum linear velocity (m/s)
+        self.v_max = 10.0         # Maximum linear velocity (m/s)
+        self.delta_min = -math.radians(25)  # Minimum steering angle (radians)
+        self.delta_max = math.radians(25)   # Maximum steering angle (radians)
+        self.L = 0.72898         # Wheelbase length (m)
+        self.processes = []      # List of processes for each motor
 
-    def move(self, speed, delta):
+    def move(self, v_cmd, delta_cmd):
         """
         Control the vehicle's speed and steering using differential drive.
 
-        :param speed: A float between -1.0 and 1.0 where:
-                    #   -1.0 is full reverse,
-                       0.0 is neutral,
-                       1.0 is full forward.
-        :param delta: A float between -1.0 and 1.0 where:
-                      -1.0 is full left turn,
-                       0.0 is straight,
-                       1.0 is full right turn.
+        :param v_cmd: Linear velocity command in m/s
+        :param delta_cmd: Steering angle command in radians
         """
-        # Ensure speed and delta are within -1.0 to 1.0
-        speed = max(-1.0, min(1.0, speed))
-        delta = max(-1.0, min(1.0, delta))
+        # Ensure v_cmd and delta_cmd are within physical limits
+        v_cmd = np.clip(v_cmd, self.v_min, self.v_max)
+        delta_cmd = np.clip(delta_cmd, self.delta_min, self.delta_max)
 
-        # Calculate left and right wheel speeds for differential drive
-        # left_speed = speed - ( delta * self.L / 2.0)
-        # right_speed = speed + (delta * self.L / 2.0)
-        left_speed = speed * (1 - delta) 
-        right_speed = speed * (1 + delta)
-        
-        # Normalize wheel speeds if they exceed the range [-1.0, 1.0]
-        max_wheel_speed = max(abs(left_speed), abs(right_speed))
-        if max_wheel_speed > 1.0:
-            left_speed /= max_wheel_speed
-            right_speed /= max_wheel_speed
+        # Compute angular velocity omega
+        omega = v_cmd / self.L * np.tan(delta_cmd)
 
-        # Map wheel speeds to servo values (45 to 135)
-        left_servo_value = left_speed * 30 + 90
-        right_servo_value = right_speed * 30 + 90
+        # Compute left and right wheel speeds
+        v_left = v_cmd - (self.L / 2.0) * omega
+        v_right = v_cmd + (self.L / 2.0) * omega
 
-        left_servo_value = max(60, min(120, left_servo_value))
-        right_servo_value = max(60, min(120, right_servo_value))
+        # Map wheel speeds to servo commands
+        left_servo_value_int = self.map_speed_to_servo(v_left)
+        right_servo_value_int = self.map_speed_to_servo(v_right)
 
-        left_servo_value_int = int(round(left_servo_value))
-        right_servo_value_int = int(round(right_servo_value))
+        # Map steering angle to servo command
+        steering_servo_value_int = self.map_steering_to_servo(delta_cmd)
 
-        steering_servo_value = (delta + 1.0) * 30 + 67  # Scale delta to [0, 2], then to [0, 60], shift to [67, 127]
-
-        steering_servo_value = max(67, min(127, steering_servo_value))
-        steering_servo_value_int = int(round(steering_servo_value))
-
-        ssh_command_left = f"ssh pi@10.42.0.75 './servo3.py 0 {str(left_servo_value_int)}'"
-        ssh_command_right = f"ssh pi@10.42.0.75 './servo3.py 1 {str(right_servo_value_int)}'"
-        ssh_command_steer = f"ssh pi@10.42.0.75 './servo3.py 2 {str(steering_servo_value_int)}'"
+        # Prepare SSH commands
+        ssh_command_left = f"ssh pi@10.42.0.75 './servo3.py 0 {left_servo_value_int}'"
+        ssh_command_right = f"ssh pi@10.42.0.75 './servo3.py 1 {right_servo_value_int}'"
+        ssh_command_steer = f"ssh pi@10.42.0.75 './servo3.py 2 {steering_servo_value_int}'"
         print(ssh_command_left)
         print(ssh_command_right)
         print(ssh_command_steer)
 
-        # Call servo3.py for each motor, non-blocking
+        # Execute SSH commands (non-blocking)
         self.processes = []
-        self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
-        self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+        self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
         self.processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+
+    def map_speed_to_servo(self, speed):
+        """
+        Maps wheel speed to servo value.
+
+        :param speed: Wheel speed in m/s
+        :return: Servo value (int)
+        """
+        # Servo parameters
+        servo_min = 45
+        servo_max = 135
+        servo_neutral = 90
+
+        # Normalize speed to [-1, 1]
+        speed_normalized = speed / self.v_max
+        speed_normalized = np.clip(speed_normalized, -1.0, 1.0)
+
+        # Map to servo value
+        if speed_normalized >= 0:
+            servo_value = servo_neutral + speed_normalized * (servo_max - servo_neutral)
+        else:
+            servo_value = servo_neutral + speed_normalized * (servo_neutral - servo_min)
+
+        servo_value = int(round(servo_value))
+        servo_value = np.clip(servo_value, servo_min, servo_max)
+
+        return servo_value
+
+    def map_steering_to_servo(self, delta):
+        """
+        Maps steering angle to servo value.
+
+        :param delta: Steering angle in radians
+        :return: Servo value (int)
+        """
+        # Steering servo parameters
+        steering_servo_min = 67
+        steering_servo_max = 127
+
+        delta_deg = np.degrees(delta)
+        delta_min_deg = np.degrees(self.delta_min)
+        delta_max_deg = np.degrees(self.delta_max)
+
+        # Map delta from [delta_min_deg, delta_max_deg] to [steering_servo_min, steering_servo_max]
+        steering_servo_value = steering_servo_min + (delta_deg - delta_min_deg) * (steering_servo_max - steering_servo_min) / (delta_max_deg - delta_min_deg)
+        steering_servo_value = int(round(steering_servo_value))
+        steering_servo_value = np.clip(steering_servo_value, steering_servo_min, steering_servo_max)
+
+        return steering_servo_value
 
     def cleanup(self):
         ssh_command_left = f"ssh pi@10.42.0.75 './servo3.py 0 90'"
         ssh_command_right = f"ssh pi@10.42.0.75 './servo3.py 1 90'"
         ssh_command_steer = f"ssh pi@10.42.0.75 './servo3.py 2 97'"
-        # print(ssh_command_left)
-        # print(ssh_command_right)
-        # print(ssh_command_steer)
 
-        # Call servo3.py for each motor, non-blocking
+        # Execute SSH commands to reset servos
         self.processes = []
-        self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
-        self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)) 
+        self.processes.append(subprocess.Popen(ssh_command_left, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
+        self.processes.append(subprocess.Popen(ssh_command_right, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
         self.processes.append(subprocess.Popen(ssh_command_steer, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE))
