@@ -28,7 +28,7 @@ class RMPPIController:
         self.w_speed_deviation = 0.01
 
         # Vehicle parameters
-        self.max_acceleration = 10.0  # Maximum acceleration (m/s^2)
+        self.max_acceleration = 5.0  # Maximum acceleration (m/s^2)
         self.max_steering_rate = np.radians(10)  # Maximum steering rate (rad/s)
         self.desired_speed = 5.0  # Desired cruising speed (m/s)
 

@@ -5,9 +5,9 @@ import math
 class Vehicle:
     def __init__(self):
         self.v_min = 0.0        # Minimum linear velocity (m/s)
-        self.v_max = 10.0         # Maximum linear velocity (m/s)
-        self.delta_min = -math.radians(25)  # Minimum steering angle (radians)
-        self.delta_max = math.radians(25)   # Maximum steering angle (radians)
+        self.v_max = 7.0         # Maximum linear velocity (m/s)
+        self.delta_min = -math.radians(20)  # Minimum steering angle (radians)
+        self.delta_max = math.radians(20)   # Maximum steering angle (radians)
         self.L = 0.72898         # Wheelbase length (m)
         self.processes = []      # List of processes for each motor
 
