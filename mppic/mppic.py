@@ -7,7 +7,7 @@ import time
 from vehicle import Vehicle
 
 class RMPPIController:
-    def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=5, N=250):
+    def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=5, N=500):
         self.path_x = path_x
         self.path_y = path_y
         self.wheel_base = wheel_base
@@ -31,6 +31,7 @@ class RMPPIController:
         self.w_deviation = 500.0
         self.w_heading = 200.0
         self.w_cumulative_heading = 200.0
+        self.w_backward = 500.0
 
         # Vehicle parameters
         self.max_acceleration = 5.0  # Maximum acceleration (m/s^2)
@@ -41,15 +42,15 @@ class RMPPIController:
         self.min_speed = 1.0  # Minimum speed (m/s)
         
         # Prediction horizon parameters
-        self.T = 20  # Prediction horizon steps
+        self.T = 15  # Prediction horizon steps
         self.T_min = 10
-        self.T_max = 25
+        self.T_max = 20
         self.scaling_factor_T = 1.1  # For adjusting T based on speed
 
 
         # Lookahead distance parameters
-        self.base_lookahead = 4.0  # Base lookahead distance (meters)
-        self.scaling_factor_lookahead = 0.3  # Scaling factor for speed
+        self.base_lookahead = 3.0  # Base lookahead distance (meters)
+        self.scaling_factor_lookahead = 0.5  # Scaling factor for speed
 
     def dynamics(self, state, control, prev_delta):
         x, y, theta, v = state
@@ -97,8 +98,7 @@ class RMPPIController:
         closest_index = np.argmin(distances)
         return closest_index
 
-    def cost_function(self, state, control, prev_control, cumulative_heading_change):
-    # def cost_function(self, state, target, control, prev_control):
+    def cost_function(self, state, control, prev_control, cumulative_heading_change, prev_index):
         x, y, theta, v = state
         # target_x, target_y = target
         v_cmd, delta_cmd = control
@@ -108,7 +108,13 @@ class RMPPIController:
         target_x = self.path_x[closest_index_sim]
         target_y = self.path_y[closest_index_sim]
 
+        progress = closest_index_sim - prev_index 
 
+        if progress < 0:
+            backward_progress_penalty = self.w_backward * (-progress)
+        else:
+            backward_progress_penalty = 0.0
+        prev_index = closest_index_sim
 
         # Position error
         position_error = np.sqrt((x - target_x) ** 2 + (y - target_y) ** 2)
@@ -195,9 +201,10 @@ class RMPPIController:
                       heading_alignment_cost + 
                       low_speed_penalty + 
                       high_speed_penalty +
-                      cumulative_heading_cost
+                      cumulative_heading_cost + 
+                      backward_progress_penalty
                       )
-        return total_cost, cumulative_heading_change
+        return total_cost, cumulative_heading_change, prev_index
 
     def simulate_control(self):
         self.vehicle.cleanup()
@@ -224,6 +231,7 @@ class RMPPIController:
         distance_from_end = np.sqrt((state[0] - final_x)**2 + (state[1] - final_y)**2)
 
         t = 0
+        prev_index = 0
         while abs(distance_from_end) > 5:  
             plt.cla()
 
@@ -248,9 +256,17 @@ class RMPPIController:
             target = np.array([self.path_x[target_index], self.path_y[target_index]])
             
             # Generate control sequences
-            control_std = np.array([0.1, np.radians(1)])
+            # control_std = np.array([0.1, np.radians(1)])
+            position_error = np.linalg.norm(state[:2] - target)
             
+            max_control_std = np.array([0.5, np.radians(5)])
+            min_control_std = np.array([0.1, np.radians(1)])
 
+            error_ratio = min(position_error / self.max_deviation, 1.0)
+            control_std = min_control_std + error_ratio * (max_control_std - min_control_std)
+
+            max_control_std = np.array([0.3, np.radians(3)])
+            control_std = np.minimum(control_std, max_control_std)
             # Sample control sequences
             U_samples = np.random.normal(self.control_mean, control_std, size=(self.N, self.T, 2))
 
@@ -268,6 +284,7 @@ class RMPPIController:
                 cost = 0.0
                 prev_u = prev_control.copy()
                 prev_delta_sim = prev_control[1]
+                prev_index = 0
                 cumulative_heading_change = 0.0
                 trajectory = [state_sim[:2].copy()]
                 for k in range(self.T):
@@ -277,7 +294,7 @@ class RMPPIController:
                     prev_delta_sim = delta_new_sim
                     trajectory.append(state_sim[:2].copy())
                     # Compute cost
-                    cost_step, cumulative_heading_change = self.cost_function(state_sim, u, prev_u, cumulative_heading_change)
+                    cost_step, cumulative_heading_change, prev_index = self.cost_function(state_sim, u, prev_u, cumulative_heading_change, prev_index)
                     cost += cost_step
                     # cost += self.cost_function(state_sim, target, u, prev_u)
                     prev_u = u  # Update previous control
@@ -319,7 +336,10 @@ class RMPPIController:
             alpha = 0.7  # Smoothing factor
             self.control_mean = alpha * control + (1 - alpha) * self.control_mean
             # self.control_mean = control
-            
+            self.control_mean[0] = np.clip(self.control_mean[0], self.vehicle.v_min, self.vehicle.v_max)
+            self.control_mean[1] = np.clip(self.control_mean[1], self.vehicle.delta_min, self.vehicle.delta_max)
+
+
             # Move the vehicle based on the computed control inputs
             self.vehicle.move(self.control_mean[0], self.control_mean[1])
 
