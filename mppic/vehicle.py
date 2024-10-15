@@ -10,6 +10,7 @@ class Vehicle:
         self.delta_max = math.radians(20)   # Maximum steering angle (radians)
         self.L = 0.72898         # Wheelbase length (m)
         self.processes = []      # List of processes for each motor
+        
 
     def move(self, v_cmd, delta_cmd):
         """
