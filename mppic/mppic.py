@@ -7,7 +7,7 @@ import time
 from vehicle import Vehicle
 
 class RMPPIController:
-    def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=5, N=500):
+    def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
         self.path_x = path_x
         self.path_y = path_y
         self.wheel_base = wheel_base
@@ -31,14 +31,14 @@ class RMPPIController:
         self.w_deviation = 500.0
         self.w_heading = 200.0
         self.w_cumulative_heading = 200.0
-        self.w_backward = 500.0
+        self.w_backward = 1000.0
 
         # Vehicle parameters
         self.max_acceleration = 5.0  # Maximum acceleration (m/s^2)
         self.max_steering_rate = np.radians(10)  # Maximum steering rate (rad/s)
         self.max_deviation = 1.75  # Maximum deviation from path (meters)
-        self.max_speed = 7.0 # Maximum speed (m/s)
-        self.desired_speed = 4.0  # Desired cruising speed (m/s)
+        self.max_speed = 5.0 # Maximum speed (m/s)
+        self.desired_speed = 2.5  # Desired cruising speed (m/s)
         self.min_speed = 1.0  # Minimum speed (m/s)
         
         # Prediction horizon parameters

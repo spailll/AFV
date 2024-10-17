@@ -3,13 +3,14 @@ import numpy as np
 # import matplotlib.pyplot as plt
 
 class MPCController:
-    def __init__(self, path_planner, vehicle_model, N=20, dt=0.1):
+    def __init__(self, path_planner, vehicle_model, N=20, dt=0.1, debug=False):
     # def __init__(self, N, dt, kappa_coeffs, delta_max_degree=30):
         # MPC parameters
         self.N = N
         self.dt = dt
         self.path_planner = path_planner
         self.vehicle = vehicle_model
+        self.debug = debug
 
         self.NX = 4
         self.NU = 2
@@ -107,8 +108,8 @@ class MPCController:
 
         delta_max = np.deg2rad(30)
         delta_min = -delta_max
-        a_max = 2.0
-        a_min = -2.0
+        a_max = 5.0
+        a_min = -5.0
 
         for _ in range(self.N):
             self.lbx.extend([delta_min, a_min])
@@ -134,6 +135,8 @@ class MPCController:
         s_ref = s_future
 
         ref_traj = np.vstack([d_ref, psi_ref, v_ref, s_ref])
+        # if self.debug:
+            # print("Reference Trajectory Generated: ", ref_traj)
         return ref_traj
 
     def solve(self, frenet_state, reference_traj):
@@ -157,6 +160,10 @@ class MPCController:
 
         delta_opt = sol_u[0]
         a_opt = sol_u[1]
+
+        if self.debug:
+            print(f"Optimal Control Inputs -> Delta: {delta_opt:.3f} rad, Accel: {a_opt:.3f}")
+            # print(f"Objective Function Value: {sol['f'].full()[0][0]:.3f}")
 
         # print(f"Optimal Control Inputs -> Delta: {delta_opt:.3f} rad, Accel: {a_opt:.3f} m/s²")
         # # Optionally, print the cost
