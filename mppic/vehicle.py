@@ -5,7 +5,7 @@ import math
 class Vehicle:
     def __init__(self):
         self.v_min = 0.0        # Minimum linear velocity (m/s)
-        self.v_max = 7.0        # Maximum linear velocity (m/s)
+        self.v_max = 5.0        # Maximum linear velocity (m/s)
         self.delta_min = -20    # Minimum steering angle (radians)
         self.delta_max = 20     # Maximum steering angle (radians)
         self.remote_user = 'pi'

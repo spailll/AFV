@@ -34,11 +34,11 @@ class RMPPIController:
         self.w_backward = 1000.0
 
         # Vehicle parameters
-        self.max_acceleration = 5.0  # Maximum acceleration (m/s^2)
+        self.max_acceleration = 1.0  # Maximum acceleration (m/s^2)
         self.max_steering_rate = np.radians(10)  # Maximum steering rate (rad/s)
-        self.max_deviation = 1.75  # Maximum deviation from path (meters)
-        self.max_speed = 5.0 # Maximum speed (m/s)
-        self.desired_speed = 2.5  # Desired cruising speed (m/s)
+        self.max_deviation = 1.0  # Maximum deviation from path (meters)
+        self.max_speed = 2.0 # Maximum speed (m/s)
+        self.desired_speed = 1.5  # Desired cruising speed (m/s)
         self.min_speed = 1.0  # Minimum speed (m/s)
         
         # Prediction horizon parameters

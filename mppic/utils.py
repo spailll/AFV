@@ -1,6 +1,6 @@
 import numpy as np
 
-def generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20):
+def generate_path_from_waypoints(waypoints, corner_radius=2.0, num_points_per_arc=20):
     """
     Generates a continuous path from discrete waypoints by keeping straight segments
     and rounding corners with circular arcs.
