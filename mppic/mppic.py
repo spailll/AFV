@@ -3,8 +3,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-
+import serial
+from threading import Thread, Event
+from Mavlink import mavlink
 from vehicle import Vehicle
+
+CALLSIGN = 'YOURCALSGN'
+
+emergency_stop = False
+
+def recieve_messages(mav, stop_event):
+    global emergency_stop
+    while not stop_event.is_set():
+        msg = mav.recv_match(blocking=True)
+        if not msg:
+            continue
+
+        msg_type = msg.get_type()
+
+        elif msg_type == 'EMERGENCY_STOP':
+            handle_emergency_stop(msg)
+
+def handle_emergency_stop(msg):
+    global emergency_stop
+    emergency_stop = True
+
+def send_current_location(mav, x, y):
+    msg = mavlink.MAVLink_current_location_message(x_coordinate=x, y_coordinate=y, callsign=CALLSIGN)
+    mav.send(msg)
+    print(f"Sent current location: X={x}, Y={y}")
 
 class RMPPIController:
     def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
@@ -206,8 +233,15 @@ class RMPPIController:
                       )
         return total_cost, cumulative_heading_change, prev_index
 
-    def simulate_control(self):
+    def simulate_control(self, mav):
         self.vehicle.cleanup()
+
+        global emergency_stop
+
+        stop_event = Event()
+
+        recieve_thread = Thread(target=recieve_messages, args=(mav, stop_event))
+
         # time.sleep(0.25)
         plt.figure()
         plt.ion()
@@ -232,7 +266,7 @@ class RMPPIController:
 
         t = 0
         prev_index = 0
-        while abs(distance_from_end) > 5:  
+        while abs(distance_from_end) > 5 and not emergency_stop:  
             plt.cla()
 
             plt.plot(self.path_x, self.path_y, 'r--', label='Target Path' if t == 0 else "")
@@ -339,10 +373,12 @@ class RMPPIController:
             self.control_mean[0] = np.clip(self.control_mean[0], self.vehicle.v_min, self.vehicle.v_max)
             self.control_mean[1] = np.clip(self.control_mean[1], self.vehicle.delta_min, self.vehicle.delta_max)
 
-
             # Move the vehicle based on the computed control inputs
-            self.vehicle.move(self.control_mean[0], self.control_mean[1])
+            self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
 
+            # Send the current location to the ground station
+            send_current_location(mav, self.state_real[0], self.state_real[1])
+            
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
             self.previous_delta = delta_new_real
@@ -369,6 +405,9 @@ class RMPPIController:
 
             t += 1
         self.vehicle.cleanup()
+
+        stop_event.set()
+        recieve_thread.join()
 
         plt.legend()
         plt.ioff()
