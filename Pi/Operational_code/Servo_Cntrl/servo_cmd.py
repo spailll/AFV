@@ -12,10 +12,10 @@ RIGHT_SERVO_INDEX = 1
 STEERING_SERVO_INDEX = 2
 
 # Vehicle Parameters
-WHEEL_TRACK = 0.4           # Distance between center of left and right wheel (meters)
-WHEELBASE = 0.72898         # Distance between front and rear axle (meters)
+WHEEL_TRACK = 0.72898      # Distance between center of left and right wheel (meters)
+WHEELBASE = 0.93345        # Distance between front and rear axle (meters)
 V_MAX = 10.0                # Maximum speed (m/s)
-MAX_STEERING_ANGLE = 20.0   # Maximum steering angle before wheel rub (degrees) 
+MAX_STEERING_ANGLE = 20.0  # Maximum steering angle before wheel rub (degrees) 
 
 # Steering servo parameters
 STEERING_CENTER_ANGLE = 97
@@ -47,11 +47,11 @@ def steering_input_to_servo_angle(steering_input_deg):
     servo_angle = max(STEERING_LEFT_LIMIT, min(STEERING_RIGHT_LIMIT, servo_angle))
     return servo_angle
 
-def compute_wheel_speeds(velocity, steering_angle_deg):
+def compute_wheel_speeds(velocity, angle):
     # Limit steering to maximum allowed angle
     angle = max(-MAX_STEERING_ANGLE, min(MAX_STEERING_ANGLE, angle))
 
-    if steering_angle_deg == 0:
+    if angle == 0:
         V_left = velocity
         V_right = velocity
     else:
