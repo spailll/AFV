@@ -8,13 +8,10 @@ from libs.defines import *
 from libs import CarDescription, normalize_angle
 import math
 import cvxpy
+import numpy as np
 
 
-class State:
-    """
-        vehicle state class
-        """
-
+class State:        # vehicle state class
     def __init__(self, x=0.0, y=0.0, yaw=0.0, v=0.0):
         self.x = x
         self.y = y
@@ -33,6 +30,7 @@ class MPC:
         # mpc parameters
         self.R = np.diag([0.01, 0.01])  # input cost matrix
         self.Rd = np.diag([0.01, 1.0])  # input difference cost matrix
+        # FIXME: Q has bad values, as does Rd
         self.Q = np.diag([0.1, 0.1, 3.0, 0.5])  # state cost matrix
         self.Qf = self.Q  # state final matrix
         self.GOAL_DIS = 1.5  # goal distance

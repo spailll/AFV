@@ -1,7 +1,6 @@
 # AFV
 
-This repository is the overall code for the Spring 2024 Autonomous Firefighting Vehicle. Contained in this repo is
-several folders used for the control of the AFV.
+This repository is the overall code for the Spring 2024 Autonomous Firefighting Vehicle. Contained in this repo is several folders used for the control of the AFV.
 
 ### Setup Instructions
 
@@ -31,12 +30,10 @@ the search and reconstruct path functions used for path planning. To see usage, 
 
 #### Graph GUI
 
-The Graph GUI will allow you to create a graph network using Google Maps. This graph network will
-be used for A* search to help find the optimal path from one point to another.
+The Graph GUI will allow you to create a graph network using Google Maps. This graph network will be used for A* search to help find the optimal path from one point to another.
 
 To run the GUI: `python ./search/GUI/gui.py`
 
-Currently, the GUI saves to a json file located in `logs/`. To change this directory, change the save_file variable
-to your location.
+Currently, the GUI saves to a json file located in `logs/`. To change this directory, change the save_file variable to your location.
 
 

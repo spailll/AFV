@@ -24,7 +24,7 @@ def main():
         # Do any additional cleanup or tasks here
         
         # Clean up GPIO
-        cleanup_gpio()
+        # cleanup_gpio() # Already called in finally block
 
         print("All devices homed and turned off.")
 
