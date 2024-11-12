@@ -12,9 +12,9 @@ waypoints = []
 mission_started = False
         
 def handle_waypoint_list(msg):
-    if msg.callsign != CALLSIGN:
-        print(f"Received waypoints from {msg.callsign}. Ignoring.")
-        return
+    # if msg.callsign.decode != CALLSIGN:
+    #     print(f"Received waypoints from {msg.callsign}. Ignoring.")
+    #     return
     
     wp_count = msg.wp_count
     

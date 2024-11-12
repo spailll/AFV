@@ -34,7 +34,7 @@ from vehicle import Vehicle
 #     print(f"Sent current location: X={x}, Y={y}")
 
 class RMPPIController:
-    def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
+    def __init__(self, path_x, path_y, mav, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
         self.path_x = path_x
         self.path_y = path_y
         self.wheel_base = wheel_base
@@ -78,6 +78,9 @@ class RMPPIController:
         # Lookahead distance parameters
         self.base_lookahead = 3.0  # Base lookahead distance (meters)
         self.scaling_factor_lookahead = 0.5  # Scaling factor for speed
+
+        # Initialize the MAVLink object
+        self.mav = mav
 
     def dynamics(self, state, control, prev_delta):
         x, y, theta, v = state
@@ -234,7 +237,6 @@ class RMPPIController:
         return total_cost, cumulative_heading_change, prev_index
 
     def simulate_control(self):
-    # def simulate_control(self, mav):
         self.vehicle.cleanup()
 
         # global emergency_stop
@@ -380,7 +382,7 @@ class RMPPIController:
 
             # Send the current location to the ground station
             # send_current_location(mav, self.state_real[0], self.state_real[1])
-            send_current_location(self.state_real[0], self.state_real[1])
+            send_current_location(mav, self.state_real[0], self.state_real[1])
             
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)

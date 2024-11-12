@@ -13,6 +13,8 @@ CALLSIGN = 'YOURCALSGN'
 waypoints = []
 mission_started = False
 
+
+
 def handle_waypoint_list(msg):
     if msg.callsign != CALLSIGN:
         print(f"Received waypoints from {msg.callsign}. Ignoring.")
@@ -67,10 +69,10 @@ def main():
     print(path_x, path_y)
 
     # Initialize the RMPPI controller
-    controller = RMPPIController(path_x, path_y)
+    controller = RMPPIController(path_x, path_y, mav)
 
     # Simulate control and follow the path
-    controller.simulate_control(mav)
+    controller.simulate_control()
 
     ser.close()
 if __name__ == '__main__':

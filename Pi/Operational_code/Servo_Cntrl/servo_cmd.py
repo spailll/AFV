@@ -47,11 +47,11 @@ def steering_input_to_servo_angle(steering_input_deg):
     servo_angle = max(STEERING_LEFT_LIMIT, min(STEERING_RIGHT_LIMIT, servo_angle))
     return servo_angle
 
-def compute_wheel_speeds(velocity, angle):
+def compute_wheel_speeds(velocity, steering_angle_deg):
     # Limit steering to maximum allowed angle
-    angle = max(-MAX_STEERING_ANGLE, min(MAX_STEERING_ANGLE, angle))
+    angle = max(-MAX_STEERING_ANGLE, min(MAX_STEERING_ANGLE, steering_angle_deg))
 
-    if angle == 0:
+    if steering_angle_deg == 0:
         V_left = velocity
         V_right = velocity
     else:
@@ -103,8 +103,8 @@ try:
     V_left, V_right = compute_wheel_speeds(velocity, steering_input_deg)
 
     # Map wheel speed to servo angles
-    servo_angle_left = speed_to_servo_angle(V_left, V_MAX)
-    servo_angle_right = speed_to_servo_angle(V_right, V_MAX)
+    servo_angle_left = wheel_speed_to_servo_angle(V_left, V_MAX)
+    servo_angle_right = wheel_speed_to_servo_angle(V_right, V_MAX)
 
     # Move servos
     move_servo(LEFT_SERVO_INDEX, servo_angle_left)
