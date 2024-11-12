@@ -5,33 +5,33 @@ import matplotlib.pyplot as plt
 import time
 import serial
 from threading import Thread, Event
-from Mavlink import mavlink
+from Mavlink import MAVLink
 from vehicle import Vehicle
 
-CALLSIGN = 'YOURCALSGN'
+# CALLSIGN = 'YOURCALSGN'     # Not necessary for RF controlled Vehicles, but still advised
 
-emergency_stop = False
+# emergency_stop = False
 
-def recieve_messages(mav, stop_event):
-    global emergency_stop
-    while not stop_event.is_set():
-        msg = mav.recv_match(blocking=True)
-        if not msg:
-            continue
+# def recieve_messages(mav, stop_event):
+#     global emergency_stop
+#     while not stop_event.is_set():
+#         msg = mav.recv_match(blocking=True)
+#         if not msg:
+#             continue
 
-        msg_type = msg.get_type()
+#         msg_type = msg.get_type()
 
-        elif msg_type == 'EMERGENCY_STOP':
-            handle_emergency_stop(msg)
+#         elif msg_type == 'EMERGENCY_STOP':
+#             handle_emergency_stop(msg)
 
-def handle_emergency_stop(msg):
-    global emergency_stop
-    emergency_stop = True
+# def handle_emergency_stop(msg):
+#     global emergency_stop
+#     emergency_stop = True
 
-def send_current_location(mav, x, y):
-    msg = mavlink.MAVLink_current_location_message(x_coordinate=x, y_coordinate=y, callsign=CALLSIGN)
-    mav.send(msg)
-    print(f"Sent current location: X={x}, Y={y}")
+# def send_current_location(mav, x, y):
+#     msg = mav.MAVLink_current_location_message(x_coordinate=x, y_coordinate=y, callsign=CALLSIGN)
+#     mav.send(msg)
+#     print(f"Sent current location: X={x}, Y={y}")
 
 class RMPPIController:
     def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
@@ -233,14 +233,15 @@ class RMPPIController:
                       )
         return total_cost, cumulative_heading_change, prev_index
 
-    def simulate_control(self, mav):
+    def simulate_control(self):
+    # def simulate_control(self, mav):
         self.vehicle.cleanup()
 
-        global emergency_stop
+        # global emergency_stop
 
-        stop_event = Event()
+        # stop_event = Event()
 
-        recieve_thread = Thread(target=recieve_messages, args=(mav, stop_event))
+        # recieve_thread = Thread(target=recieve_messages, args=(mav, stop_event))
 
         # time.sleep(0.25)
         plt.figure()
@@ -266,7 +267,8 @@ class RMPPIController:
 
         t = 0
         prev_index = 0
-        while abs(distance_from_end) > 5 and not emergency_stop:  
+        # while abs(distance_from_end) > 5 and not emergency_stop:  
+        while abs(distance_from_end) > 5:  
             plt.cla()
 
             plt.plot(self.path_x, self.path_y, 'r--', label='Target Path' if t == 0 else "")
@@ -377,7 +379,8 @@ class RMPPIController:
             self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
 
             # Send the current location to the ground station
-            send_current_location(mav, self.state_real[0], self.state_real[1])
+            # send_current_location(mav, self.state_real[0], self.state_real[1])
+            send_current_location(self.state_real[0], self.state_real[1])
             
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)

@@ -1,6 +1,4 @@
-import numpy as np
-from mppic import RMPPIController
-from utils import generate_path_from_waypoints
+# from utils import generate_path_from_waypoints
 import time
 import serial
 from threading import Thread, Event
@@ -12,7 +10,7 @@ CALLSIGN = 'YOURCALSGN'
 
 waypoints = []
 mission_started = False
-
+        
 def handle_waypoint_list(msg):
     if msg.callsign != CALLSIGN:
         print(f"Received waypoints from {msg.callsign}. Ignoring.")
@@ -39,13 +37,15 @@ def handle_start_mission(msg):
     print(f"Received mission start from {msg.callsign}. Starting mission.")
 
 
-def main():
-    try:
-        ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
-    except serial.SerialException as e:
-        print(f"Error opening serial port {SERIAL_PORT}: {e}")
-        return
-    
+could_not_open = False
+try:
+    ser = serial.Serial(SERIAL_PORT, BAUD_RATE)
+    print(f"Opened serial port {SERIAL_PORT} at {BAUD_RATE} baud.")
+except Exception as e:
+    print(f"Error opening serial port {SERIAL_PORT}: {e}")
+    could_not_open = True
+
+if not could_not_open:
     mav = MAVLink(ser)
 
     while True:
@@ -61,17 +61,9 @@ def main():
             if mission_started == True:
                 break
 
+    # path_x, path_y = generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20)
 
-    path_x, path_y = generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20)
-
-    print(path_x, path_y)
-
-    # Initialize the RMPPI controller
-    controller = RMPPIController(path_x, path_y)
-
-    # Simulate control and follow the path
-    controller.simulate_control(mav)
+    print("\nGenerated path:")
+    print(waypoints)
 
     ser.close()
-if __name__ == '__main__':
-    main()
