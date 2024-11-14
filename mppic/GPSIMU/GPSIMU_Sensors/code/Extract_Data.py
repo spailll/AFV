@@ -9,11 +9,6 @@ import platform
 import os
 from Dll.lib.Modular.JY901 import JY901
 
-greet = """
-GPSIMU module, Extracting RMC data.
-Press Ctrl+C to stop.
-"""
-
 class GPSIMUDevice:
     def __init__(self, port=None, baudrate=None):
         self.port = "/dev/ttyUSB0" if port is None else port

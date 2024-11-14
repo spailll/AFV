@@ -14,7 +14,7 @@ from vehicle import Vehicle
 from GPSIMU.GPSIMU_Sensors.code.Extract_Data import GPSIMUDevice
 from GPSTransformer import GPSCoordinateTransformer
 
-# CALLSIGN = 'YOURCALSGN'     # Not necessary for RF controlled Vehicles, but still advised
+CALLSIGN = 'YOURCALSGN'     # Not necessary for RF controlled Vehicles, but still advised
 
 # emergency_stop = False
 
