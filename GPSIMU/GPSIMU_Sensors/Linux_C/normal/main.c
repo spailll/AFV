@@ -52,7 +52,7 @@ int main(int argc, char* argv[]){
     AutoScanSensor(argv[1]);
 
     // Print CSV headers
-    printf("AccX,AccY,AccZ,GyroX,GyroY,GyroZ,AngleX,AngleY,AngleZ,MagX,MagY,MagZ,Temp\n");
+    //printf("AccX,AccY,AccZ,GyroX,GyroY,GyroZ,AngleX,AngleY,AngleZ,MagX,MagY,MagZ,Temp\n");
     
     while(1)
     {
@@ -70,8 +70,9 @@ int main(int argc, char* argv[]){
                     fAcc[i] = sReg[AX+i] / 32768.0f * 16.0f;
                     fGyro[i] = sReg[GX+i] / 32768.0f * 2000.0f;
                     fAngle[i] = sReg[Roll+i] / 32768.0f * 180.0f;
+                    temp = sReg[TEMP] / 100.0f;
                 }
-                temp = sReg[TEMP] / 100.0f;
+                
 
                 // Print data in CSV format only if all necessary updates are available
                 if((s_cDataUpdate & ACC_UPDATE) && (s_cDataUpdate & GYRO_UPDATE) &&
