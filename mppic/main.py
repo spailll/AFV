@@ -14,7 +14,7 @@ from Mavlink import MAVLink
 SERIAL_PORT_RF = '/dev/ttyUSB0'
 SERIAL_PORT_IMU = '/dev/ttyUSB1'
 BAUD_RATE = 57600
-CALLSIGN = 'YOURCALSGN'
+CALLSIGN = 'KJ5IOJ'
 
 waypoints = []
 mission_started = False
