@@ -1,15 +1,10 @@
+'''
+ Author: Ben Sailor
+ Description: This file contains utility functions for the mppic package.
+'''
 import numpy as np
 
 def generate_path_from_waypoints(waypoints, corner_radius=2.0, num_points_per_arc=20):
-    """
-    Generates a continuous path from discrete waypoints by keeping straight segments
-    and rounding corners with circular arcs.
-
-    :param waypoints: An array of waypoints, each waypoint is a [x, y] pair.
-    :param corner_radius: Radius of the circular arcs used to round corners.
-    :param num_points_per_arc: Number of points to generate along each arc.
-    :return: Tuple of arrays (path_x, path_y) representing the continuous path.
-    """
     path_x = []
     path_y = []
     num_waypoints = len(waypoints)
