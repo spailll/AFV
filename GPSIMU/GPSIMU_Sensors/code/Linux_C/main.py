@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # Run other parts of your main program in parallel
     try:
         while True:
-            print("Main program running other tasks...")
+            #print("Main program running other tasks...")
             # Simulate other tasks, such as MPPIC calculations or telemetry monitoring
             time.sleep(1)  # Adjust sleep timing as necessary for your main loop
     except KeyboardInterrupt:
