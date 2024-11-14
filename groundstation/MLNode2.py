@@ -1,15 +1,15 @@
 
-# from utils import generate_path_from_waypoints
 import time
 import serial
 from threading import Thread, Event
 from Mavlink import MAVLink, MAVLink_waypoint_list_message, MAVLink_start_mission_message
+from utils import generate_path_from_waypoints
 
 SERIAL_PORT = '/dev/ttyUSB0'
 BAUD_RATE = 57600
 CALLSIGN = 'KJ5IOJ'
 
-waypoints = [[0, 0], [0,10], [10,10], [10,20], [20,20], [20,30], [30,30], [30,40], [40,40], [40,50], [50,50], [50,60]]
+waypoints = [[0, 0], [0,10], [10,10], [10,20]]
 
 def pad_coordinates(coords, desired_length=10, pad_value=0.0):
     return coords + [pad_value] * (desired_length - len(coords))
@@ -57,6 +57,9 @@ except serial.SerialException as e:
 
 mav = MAVLink(ser)
 
+path_x, path_y = generate_path_from_waypoints(coords)
+real_x, real_y = np.array([0]), np.array([0])
+
 for x_group, y_group in zip(x_list, y_list):
     x_group_padded = pad_coordinates(x_group)
     y_group_padded = pad_coordinates(y_group)
@@ -66,6 +69,30 @@ for x_group, y_group in zip(x_list, y_list):
 msg = MAVLink_start_mission_message(callsign=CALLSIGN)
 mav.send(msg)
 
+plt.figure()
+plt.ion()
+plt.show()
+
+while True:
+    plt.cla()
+    plt.plot(path_x, path_y, 'r--', label='Target Path' if t == 0 else "")
+    plt.plot(real_x, real_y, 'ro', label='Real Path' if t == 0 else "")
+    plt.pause(0.01)
+    if ser.in_waiting > 0:
+        c = ser.read(1)
+        msg = mav.parse_char(c)
+        if msg is not None:
+            msg_type = msg.get_type()
+            if msg_type == 'CURRENT_LOCATION':
+                real_x.append(msg.x_coordinate)
+                real_y.append(msg.y_coordinate)
+
+        if mission_started == True:
+            break
+
+plt.legend()
+plt.ioff()
+plt.show()
 
 
 

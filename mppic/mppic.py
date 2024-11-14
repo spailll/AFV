@@ -1,5 +1,9 @@
-# mppic.py
-
+'''
+ Author: Ben Sailor
+ Description: This class is the model predictive path integral controller (MPPI) for the
+ autonomous vehicle. The controller generates control inputs to follow a given path
+ using a differential drive vehicle model.
+'''
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -7,6 +11,8 @@ import serial
 from threading import Thread, Event
 from Mavlink import MAVLink
 from vehicle import Vehicle
+from GPSIMU.GPSIMU_Sensors.code.Extract_Data import GPSIMUDevice
+from GPSTransformer import GPSCoordinateTransformer
 
 # CALLSIGN = 'YOURCALSGN'     # Not necessary for RF controlled Vehicles, but still advised
 
@@ -28,13 +34,13 @@ from vehicle import Vehicle
 #     global emergency_stop
 #     emergency_stop = True
 
-# def send_current_location(mav, x, y):
-#     msg = mav.MAVLink_current_location_message(x_coordinate=x, y_coordinate=y, callsign=CALLSIGN)
-#     mav.send(msg)
-#     print(f"Sent current location: X={x}, Y={y}")
+def send_current_location(mav, x, y):
+    msg = mav.MAVLink_current_location_message(x_coordinate=x, y_coordinate=y, callsign=CALLSIGN)
+    mav.send(msg)
+    # print(f"Sent current location: X={x}, Y={y}")
 
 class RMPPIController:
-    def __init__(self, path_x, path_y, mav, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
+    def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
         self.path_x = path_x
         self.path_y = path_y
         self.wheel_base = wheel_base
@@ -78,9 +84,15 @@ class RMPPIController:
         # Lookahead distance parameters
         self.base_lookahead = 3.0  # Base lookahead distance (meters)
         self.scaling_factor_lookahead = 0.5  # Scaling factor for speed
-
-        # Initialize the MAVLink object
+    
+    def setup(self, mav, port=None, baudrate=None):
+        self.vehicle.cleanup()
         self.mav = mav
+        self.gpsimu = GPSIMUDevice(port, baudrate)
+        self.gpsimu.open()
+        data = self.gpsimu.get_data()
+        self.gps_transformer = GPSCoordinateTransformer(init_lat=data['Lat'], init_lon=data()['Lon'])
+        time.sleep(0.25)
 
     def dynamics(self, state, control, prev_delta):
         x, y, theta, v = state
@@ -217,8 +229,6 @@ class RMPPIController:
 
         cumulative_heading_cost = self.w_cumulative_heading * cumulative_heading_change
 
-
-
         # Total cost
         total_cost = (
                       self.w_position * position_error +
@@ -235,22 +245,8 @@ class RMPPIController:
                       backward_progress_penalty
                       )
         return total_cost, cumulative_heading_change, prev_index
-
-    def simulate_control(self):
-        self.vehicle.cleanup()
-
-        # global emergency_stop
-
-        # stop_event = Event()
-
-        # recieve_thread = Thread(target=recieve_messages, args=(mav, stop_event))
-
-        # time.sleep(0.25)
-        plt.figure()
-        plt.ion()
-        plt.show()
-        # plt.plot(self.path_x, self.path_y, 'r--', label='Target Path')  # Plot the target path
-
+    
+    def control(self):
         num_steps = len(self.path_x)
         prev_control = self.control_mean.copy()
 
@@ -271,9 +267,152 @@ class RMPPIController:
         prev_index = 0
         # while abs(distance_from_end) > 5 and not emergency_stop:  
         while abs(distance_from_end) > 5:  
-            plt.cla()
+            # Get the current state
+            state = self.state_real
+            current_speed = state[3]
 
-            plt.plot(self.path_x, self.path_y, 'r--', label='Target Path' if t == 0 else "")
+            # Adjust prediction horizon based on speed
+            self.T = self.adjust_prediction_horizon(current_speed)
+
+            # Compute lookahead distance
+            lookahead_distance = self.compute_lookahead_distance(current_speed)
+
+            # Find the closest path index
+            closest_index = self.find_closest_path_index(state[:2])
+
+            # Compute target index with lookahead
+            path_length = len(self.path_x)
+            target_index = min(closest_index + int(lookahead_distance / (np.hypot(np.diff(self.path_x).mean(), np.diff(self.path_y).mean()))), path_length - 1)
+            target_index = max(target_index, closest_index + 1)
+            target = np.array([self.path_x[target_index], self.path_y[target_index]])
+            
+            # Generate control sequences
+            position_error = np.linalg.norm(state[:2] - target)
+            
+            max_control_std = np.array([0.5, np.radians(5)])
+            min_control_std = np.array([0.1, np.radians(1)])
+
+            error_ratio = min(position_error / self.max_deviation, 1.0)
+            control_std = min_control_std + error_ratio * (max_control_std - min_control_std)
+
+            max_control_std = np.array([0.3, np.radians(3)])
+            control_std = np.minimum(control_std, max_control_std)
+            # Sample control sequences
+            U_samples = np.random.normal(self.control_mean, control_std, size=(self.N, self.T, 2))
+
+            # Clip control samples to physical limits
+            U_samples[:, :, 0] = np.clip(U_samples[:, :, 0], self.vehicle.v_min, self.vehicle.v_max)  # Speed
+            U_samples[:, :, 1] = np.clip(U_samples[:, :, 1], self.vehicle.delta_min, self.vehicle.delta_max)  # Steering
+
+            # Simulate trajectories and compute costs
+            costs = np.zeros(self.N)
+            trajectories = []
+            for n in range(self.N):
+                state_sim = state.copy()
+                cost = 0.0
+                prev_u = prev_control.copy()
+                prev_delta_sim = prev_control[1]
+                prev_index = 0
+                cumulative_heading_change = 0.0
+                trajectory = [state_sim[:2].copy()]
+                for k in range(self.T):
+                    u = U_samples[n, k, :]
+                    
+                    # Simulate the vehicle dynamics
+                    state_sim, delta_new_sim = self.dynamics(state_sim, u, prev_delta_sim) 
+                    prev_delta_sim = delta_new_sim
+                    trajectory.append(state_sim[:2].copy())
+                    
+                    # Compute cost
+                    cost_step, cumulative_heading_change, prev_index = self.cost_function(state_sim, u, prev_u, cumulative_heading_change, prev_index)
+                    cost += cost_step                    
+                    prev_u = u  # Update previous control
+                costs[n] = cost
+                trajectories.append(trajectory)
+
+            path_taken.append(self.state_real[:2].copy())
+
+            best_index = np.argmin(costs)
+            best_trajectory = trajectories[best_index]
+            best_traj = np.array(best_trajectory)
+
+            # Compute weights
+            beta = np.min(costs)
+            weights = np.exp(-1.0 / self.lambda_ * (costs - beta))
+            weights_sum = np.sum(weights)
+            if weights_sum == 0:
+                weights = np.ones_like(weights) / len(weights)
+            else:
+                weights /= weights_sum
+
+            # Compute weighted average of control sequences
+            U_weighted = np.sum(U_samples * weights[:, np.newaxis, np.newaxis], axis=0)
+
+            # Apply the first control input
+            control = U_samples[best_index, 0, :]  # Best control input in the sequence
+
+            # Smooth control inputs using exponential moving average
+            alpha = 0.7  # Smoothing factor
+            self.control_mean = alpha * control + (1 - alpha) * self.control_mean
+            self.control_mean[0] = np.clip(self.control_mean[0], self.vehicle.v_min, self.vehicle.v_max)
+            self.control_mean[1] = np.clip(self.control_mean[1], self.vehicle.delta_min, self.vehicle.delta_max)
+
+            # Move the vehicle based on the computed control inputs
+            self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
+
+            # Send the current location to the ground station
+            send_current_location(self.mav, self.state_real[0], self.state_real[1])
+            
+            # Update the real state based on the control inputs
+            self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
+        
+            initial_data = self.gpsimu.get_data()
+            xy_data = self.gps_transformer.gps_to_xy(initial_data['Lat'], initial_data['Lon'])
+            self.state_real[0] = xy_data[0]
+            self.state_real[1] = xy_data[1]
+            self.state_real[2] = np.radians(initial_data['AngleZ'])
+
+            self.previous_delta = delta_new_real
+
+            prev_control = self.control_mean.copy()
+
+            # Record speed and theta for plotting
+            speeds.append(self.state_real[3])
+            thetas.append(self.state_real[2])
+
+            # Print debug information
+            print(f"Time step { t }:")
+            print(f"  Control: v_cmd={self.control_mean[0]:.2f} m/s, delta_cmd={np.degrees(self.control_mean[1]):.2f} degrees")
+            print(f"  State after move: x={self.state_real[0]:.2f}, y={self.state_real[1]:.2f}, theta={np.degrees(self.state_real[2]):.2f} degrees, v={self.state_real[3]:.2f} m/s")
+
+            distance_from_end = np.sqrt((state[0] - final_x)**2 + (state[1] - final_y)**2)
+
+            t += 1
+        self.vehicle.cleanup()
+
+    def simulate_control(self):
+        plt.figure()
+        plt.ion()
+        plt.show()
+
+        num_steps = len(self.path_x)
+        prev_control = self.control_mean.copy()
+
+        # Initialize lists for plotting speed and theta over time
+        speeds = []
+        thetas = []
+        state = self.state_real
+
+        print("num steps:", num_steps)
+        final_x = self.path_x[-1]
+        final_y = self.path_y[-1]
+
+        distance_from_end = np.sqrt((state[0] - final_x)**2 + (state[1] - final_y)**2)
+
+        t = 0
+        prev_index = 0
+        # while abs(distance_from_end) > 5 and not emergency_stop:  
+        while abs(distance_from_end) > 5:  
             # Get the current state
             state = self.state_real
             current_speed = state[3]
@@ -311,8 +450,6 @@ class RMPPIController:
             # Clip control samples to physical limits
             U_samples[:, :, 0] = np.clip(U_samples[:, :, 0], self.vehicle.v_min, self.vehicle.v_max)  # Speed
             U_samples[:, :, 1] = np.clip(U_samples[:, :, 1], self.vehicle.delta_min, self.vehicle.delta_max)  # Steering
-
-            # self.state_real = self.dynamics(self.state_real, self.control_mean)
 
             # Simulate trajectories and compute costs
             costs = np.zeros(self.N)
@@ -379,13 +516,16 @@ class RMPPIController:
 
             # Move the vehicle based on the computed control inputs
             self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
-
-            # Send the current location to the ground station
-            # send_current_location(mav, self.state_real[0], self.state_real[1])
-            send_current_location(mav, self.state_real[0], self.state_real[1])
             
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
+        
+            initial_data = self.gpsimu.get_data()
+            xy_data = self.gps_transformer.gps_to_xy(initial_data['Lat'], initial_data['Lon'])
+            self.state_real[0] = xy_data[0]
+            self.state_real[1] = xy_data[1]
+            self.state_real[2] = np.radians(initial_data['AngleZ'])
+
             self.previous_delta = delta_new_real
 
             prev_control = self.control_mean.copy()
@@ -410,9 +550,6 @@ class RMPPIController:
 
             t += 1
         self.vehicle.cleanup()
-
-        stop_event.set()
-        recieve_thread.join()
 
         plt.legend()
         plt.ioff()

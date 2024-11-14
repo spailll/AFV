@@ -1,3 +1,7 @@
+'''
+ Author: Ben Sailor
+ Description: This script is designed to convert GPS coordinates to XY coordinates
+'''
 import math
 
 class GPSCoordinateTransformer:

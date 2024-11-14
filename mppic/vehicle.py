@@ -1,3 +1,7 @@
+'''
+ Author: Ben Sailor
+ Description: This script is designed to control the vehicle's speed and steering
+'''
 import subprocess
 import numpy as np
 import math
