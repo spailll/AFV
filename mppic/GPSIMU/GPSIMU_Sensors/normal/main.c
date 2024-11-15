@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
 
     
     //printf("AccX,AccY,AccZ,GyroX,GyroY,GyroZ,AngleX,AngleY,AngleZ,MagX,MagY,MagZ,Temp,Longitude,Latitude\n");
-
+    // 13, 14, 5
     while (1) {
         while (serial_read_data(fd, cBuff, 1)) {
             WitSerialDataIn(cBuff[0]);

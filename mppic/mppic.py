@@ -11,7 +11,7 @@ import serial
 from threading import Thread, Event
 from Mavlink import MAVLink
 from vehicle import Vehicle
-from GPSIMU.GPSIMU_Sensors.code.Linux_C.gpsimu import GPSIMUReader
+from GPSIMU.GPSIMU_Sensors.gpsimu import GPSIMUReader
 from GPSTransformer import GPSCoordinateTransformer
 
 CALLSIGN = 'KJ5IOJ'     # Not necessary for RF controlled Vehicles, but still advised
@@ -367,7 +367,7 @@ class RMPPIController:
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
         
-            initial_data = self.gpsimu.get_data()
+            initial_data = self.gpsimu.get_latest_output()
             xy_data = self.gps_transformer.gps_to_xy(initial_data[0], initial_data[1])
             self.state_real[0] = xy_data[0]
             self.state_real[1] = xy_data[1]
@@ -521,7 +521,7 @@ class RMPPIController:
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
         
-            initial_data = self.gpsimu.get_data()
+            initial_data = self.gpsimu.get_latest_output()
             xy_data = self.gps_transformer.gps_to_xy(initial_data[0], initial_data[1])
             self.state_real[0] = xy_data[0]
             self.state_real[1] = xy_data[1]
