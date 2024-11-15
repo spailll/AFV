@@ -3,7 +3,7 @@ import threading
 import time
 
 class GPSIMUReader:
-    def __init__(self, gpsimu_executable="/home/afvokstate/AFV/mppic/GPSIMU/GPSIMU_Sensors/normal/gpsimu_reader", port="/dev/ttyUSB1"):
+    def __init__(self, gpsimu_executable="/home/afv/AFV/mppic/GPSIMU/GPSIMU_Sensors/normal/gpsimu_reader", port="/dev/ttyUSB1"):
         """
         Initializes the GPSIMUReader.
 
