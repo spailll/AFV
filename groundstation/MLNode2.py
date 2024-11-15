@@ -4,6 +4,7 @@ import serial
 from threading import Thread, Event
 from Mavlink import MAVLink, MAVLink_waypoint_list_message, MAVLink_start_mission_message
 from utils import generate_path_from_waypoints
+import numpy as np
 
 SERIAL_PORT = '/dev/ttyUSB0'
 BAUD_RATE = 57600
@@ -66,7 +67,7 @@ for x_group, y_group in zip(x_list, y_list):
     msg = MAVLink_waypoint_list_message(x_coordinate=x_group_padded, y_coordinate=y_group_padded, callsign=CALLSIGN.encode('ascii'), wp_count=len(x_group), current_wp=0)
     mav.send(msg)
 
-msg = MAVLink_start_mission_message(callsign=CALLSIGN)
+msg = MAVLink_start_mission_message(callsign=CALLSIGN.encode('ascii'))
 mav.send(msg)
 
 plt.figure()

@@ -11,7 +11,7 @@ import serial
 from threading import Thread, Event
 from Mavlink import MAVLink
 from vehicle import Vehicle
-from GPSIMU.GPSIMU_Sensors.code.Extract_Data import GPSIMUDevice
+from GPSIMU.GPSIMU_Sensors.code.Linux_C.gpsimu import GPSIMUReader
 from GPSTransformer import GPSCoordinateTransformer
 
 CALLSIGN = 'KJ5IOJ'     # Not necessary for RF controlled Vehicles, but still advised
@@ -88,10 +88,11 @@ class RMPPIController:
     def setup(self, mav, port=None, baudrate=None):
         self.vehicle.cleanup()
         self.mav = mav
-        self.gpsimu = GPSIMUDevice(port, baudrate)
-        self.gpsimu.open()
-        data = self.gpsimu.get_data()
-        self.gps_transformer = GPSCoordinateTransformer(init_lat=data['Lat'], init_lon=data()['Lon'])
+        self.gpsimu = GPSIMUReader()
+        self.gpsimu.start()
+        time.sleep(5)
+        data = self.gpsimu.get_latest_output()
+        self.gps_transformer = GPSCoordinateTransformer(init_lat=data[0], init_lon=data[1])
         time.sleep(0.25)
 
     def dynamics(self, state, control, prev_delta):
@@ -367,10 +368,10 @@ class RMPPIController:
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
         
             initial_data = self.gpsimu.get_data()
-            xy_data = self.gps_transformer.gps_to_xy(initial_data['Lat'], initial_data['Lon'])
+            xy_data = self.gps_transformer.gps_to_xy(initial_data[0], initial_data[1])
             self.state_real[0] = xy_data[0]
             self.state_real[1] = xy_data[1]
-            self.state_real[2] = np.radians(initial_data['AngleZ'])
+            self.state_real[2] = np.radians(initial_data[2])
 
             self.previous_delta = delta_new_real
 
@@ -521,10 +522,10 @@ class RMPPIController:
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
         
             initial_data = self.gpsimu.get_data()
-            xy_data = self.gps_transformer.gps_to_xy(initial_data['Lat'], initial_data['Lon'])
+            xy_data = self.gps_transformer.gps_to_xy(initial_data[0], initial_data[1])
             self.state_real[0] = xy_data[0]
             self.state_real[1] = xy_data[1]
-            self.state_real[2] = np.radians(initial_data['AngleZ'])
+            self.state_real[2] = np.radians(initial_data[2])
 
             self.previous_delta = delta_new_real
 
