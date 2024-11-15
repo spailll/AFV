@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
     WitInit(WIT_PROTOCOL_NORMAL, 0x50);
     WitRegisterCallBack(SensorDataUpdata);
     
-    printf("\r\n********************** wit-motion Normal example ************************\r\n");
+    // printf("\r\n********************** wit-motion Normal example ************************\r\n");
     AutoScanSensor(argv[1]);
 
     // Print CSV headers
@@ -156,7 +156,7 @@ static void AutoScanSensor(char* dev)
             }
             if(s_cDataUpdate != 0)
             {
-                printf("%d baud find sensor\r\n\r\n", c_uiBaud[i]);
+                // printf("%d baud find sensor\r\n\r\n", c_uiBaud[i]);
                 return;
             }
             iRetry--;
