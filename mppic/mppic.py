@@ -304,7 +304,7 @@ class RMPPIController:
             # Compute target index with lookahead
             path_length = len(self.path_x)
             target_index = min(closest_index + int(lookahead_distance / (np.hypot(np.diff(self.path_x).mean(), np.diff(self.path_y).mean()))), path_length - 1)
-            target_index = max(target_index, closest_index + 1)
+            target_index = max(target_index, closest_index)
             target = np.array([self.path_x[target_index], self.path_y[target_index]])
             
             # Generate control sequences
