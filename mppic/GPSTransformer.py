@@ -13,11 +13,12 @@ class GPSCoordinateTransformer:
         self.R = 6371000.0  # Earth radius in meters
 
     def gps_to_xy(self, lat, lon):
-        print("Latitude: ", lat)
-        print("Longitude: ", lon)
         lat_rad = math.radians(lat)
         lon_rad = math.radians(lon)
 
+        print("Latitude: ", lat_rad)
+        print("Longitude: ", lon_rad)
+        
         delta_lat = lat_rad - self.init_lat
         delta_lon = lon_rad - self.init_lon
 
