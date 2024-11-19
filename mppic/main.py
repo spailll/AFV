@@ -68,7 +68,7 @@ def main():
 
     # Initialize the RMPPI controller
     controller = RMPPIController(path_x, path_y, mav)
-    controller.setup(mav, port=SERIAL_PORT_IMU)
+    controller.setup(mav, ser, port=SERIAL_PORT_IMU)
     
     # Simulate control and follow the path
     controller.control()

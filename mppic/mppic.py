@@ -81,9 +81,10 @@ class RMPPIController:
         self.base_lookahead = 3.0  # Base lookahead distance (meters)
         self.scaling_factor_lookahead = 0.5  # Scaling factor for speed
     
-    def setup(self, mav, port='/dev/ttyUSB1'):
+    def setup(self, mav, ser, port='/dev/ttyUSB1'):
         self.vehicle.cleanup()
         self.mav = mav
+        self.ser = ser
         self.gpsimu = GPSIMUReader(port=port)
         self.gpsimu.start()
         time.sleep(5)
@@ -271,8 +272,8 @@ class RMPPIController:
         prev_index = 0
         # while abs(distance_from_end) > 5 and not emergency_stop:  
         while abs(distance_from_end) > 5:
-            if ser.in_waiting > 0:
-                c = ser.read(1)
+            if self.ser.in_waiting > 0:
+                c = self.ser.read(1)
                 msg = mav.parse_char(c)
                 if msg is not None:
                     msg_type = msg.get_type()
