@@ -68,18 +68,21 @@ class GPSIMUReader:
             self.thread = None
 
     def get_latest_output(self):
-        """
-        Returns the latest GPSIMU output.
-
-        Returns:
-            str or None: The most recent output from the GPSIMU reader, or None if no data is available.
-        """
         with self.data_lock:
-            str =  self.shared_data['latest_output']
-            data = str.split(',')
-            float_values = [float(value) for value in data]
-            values = [float_values[13], float_values[14], float_values[5]]
-            return values
+            latest_output = self.shared_data['latest_output']
+            if latest_output is None:
+                return None
+            try:
+                data = latest_output.strip().split(',')
+                if len(data) < 15:
+                    print(f"Insufficient data received: {data}")
+                    return None
+                float_values = [float(value) for value in data]
+                values = [float_values[13], float_values[14], float_values[5]]
+                return values
+            except (ValueError, IndexError) as e:
+                print(f"Error parsing GPSIMU data: {e}")
+                return None
 
 
     def clear_latest_output(self):
