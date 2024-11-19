@@ -328,6 +328,7 @@ class RMPPIController:
             # Simulate trajectories and compute costs
             costs = np.zeros(self.N)
             trajectories = []
+            print("State_real: ", state_real)
             for n in range(self.N):
                 state_sim = self.state_real.copy()
                 cost = 0.0
