@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import time
 import serial
 from threading import Thread, Event
-from Mavlink import MAVLink
+from Mavlink import MAVLink_current_location_message
 from vehicle import Vehicle
 from GPSIMU.GPSIMU_Sensors.gpsimu import GPSIMUReader
 from GPSTransformer import GPSCoordinateTransformer
@@ -248,7 +248,7 @@ class RMPPIController:
         return total_cost, cumulative_heading_change, prev_index
 
     def send_current_location(self):
-        msg = self.mav.MAVLink_current_location_message(x_coordinate=self.state_real[0], y_coordinate=self.state_real[1], callsign=CALLSIGN.encode('ascii'))
+        msg = MAVLink_current_location_message(x_coordinate=self.state_real[0], y_coordinate=self.state_real[1], callsign=CALLSIGN.encode('ascii'))
         self.mav.send(msg)
         print(f"Sent current location: X={x}, Y={y}")
 
