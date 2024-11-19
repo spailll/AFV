@@ -89,8 +89,8 @@ int main(int argc, char *argv[])
                 temp = sReg[TEMP] / 100.0f;
 
                 // Process longitude and latitude
-                lon = ((int32_t)(uint16_t)sReg[LonH] << 16) | (uint16_t)sReg[LonL];
-                lat = ((int32_t)(uint16_t)sReg[LatH] << 16) | (uint16_t)sReg[LatL];
+                lon = ((uint16_t)sReg[LonH] << 16) | (uint16_t)sReg[LonL];
+                lat = ((uint16_t)sReg[LatH] << 16) | (uint16_t)sReg[LatL];
 
                 lon_degrees = lon / 10000000;
                 lon_minutes = (lon % 10000000) / 100000.0f;
