@@ -329,7 +329,7 @@ class RMPPIController:
             costs = np.zeros(self.N)
             trajectories = []
             for n in range(self.N):
-                state_sim = self.state.copy()
+                state_sim = self.state_real.copy()
                 cost = 0.0
                 prev_u = prev_control.copy()
                 prev_delta_sim = prev_control[1]
