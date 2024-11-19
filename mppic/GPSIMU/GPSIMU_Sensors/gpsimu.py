@@ -79,6 +79,7 @@ class GPSIMUReader:
                     return None
                 float_values = [float(value) for value in data]
                 values = [float_values[13], float_values[14], float_values[5]]
+                print("Values from gpsimu.py: ", values)
                 return values
             except (ValueError, IndexError) as e:
                 print(f"Error parsing GPSIMU data: {e}")
