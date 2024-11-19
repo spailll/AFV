@@ -17,9 +17,6 @@ BAUD_RATE = 57600
 CALLSIGN = 'KJ5IOJ'
 
 waypoints = []
-mission_started = False
-
-
 
 def handle_waypoint_list(msg):
     if msg.callsign != CALLSIGN:
@@ -38,18 +35,9 @@ def handle_waypoint_list(msg):
     for idx, wp in enumerate(waypoints):
         print(f"Waypoint {idx+1}: X={wp[0]}, Y={wp[1]}")
 
-def handle_start_mission(msg):
-    if msg.callsign != CALLSIGN:
-        print(f"Received mission start from {msg.callsign}. Ignoring.")
-        return
-
-    mission_started = True
-    print(f"Received mission start from {msg.callsign}. Starting mission.")
-
-
 def main():
     try:
-        ser = serial.Serial(SERIAL_PORT_RF, BAUD_RATE)
+        ser = serial.Serial(SERIAL_PORT_RF, BAUD_RATE, timeout=0.01)
     except serial.SerialException as e:
         print(f"Error opening serial port {SERIAL_PORT_RF}: {e}")
         return
@@ -65,9 +53,10 @@ def main():
                 if msg_type == 'WAYPOINT_LIST':
                     handle_waypoint_list(msg)
                 elif msg_type == 'START_MISSION':
-                    handle_start_mission(msg)
-            if mission_started == True:
-                break
+                    if msg.callsign == CALLSIGN:
+                        print(f"Received START_MISSION from {msg.callsign}.")
+                        break
+                    print(f"Received START_MISSION from {msg.callsign}. Ignoring.")
 
 
     path_x, path_y = generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20)
@@ -79,8 +68,8 @@ def main():
 
     # Initialize the RMPPI controller
     controller = RMPPIController(path_x, path_y, mav)
-    controller.setup(mav, port=SERIAL_PORT_IMU, baudrate=None)
-
+    controller.setup(mav, port=SERIAL_PORT_IMU)
+    
     # Simulate control and follow the path
     controller.control()
 

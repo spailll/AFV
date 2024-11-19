@@ -34,10 +34,6 @@ CALLSIGN = 'KJ5IOJ'     # Not necessary for RF controlled Vehicles, but still ad
 #     global emergency_stop
 #     emergency_stop = True
 
-def send_current_location(mav, x, y):
-    msg = mav.MAVLink_current_location_message(x_coordinate=x, y_coordinate=y, callsign=CALLSIGN)
-    mav.send(msg)
-    # print(f"Sent current location: X={x}, Y={y}")
 
 class RMPPIController:
     def __init__(self, path_x, path_y, wheel_base=0.72898, dt=0.25, lambda_=1, N=500):
@@ -85,10 +81,10 @@ class RMPPIController:
         self.base_lookahead = 3.0  # Base lookahead distance (meters)
         self.scaling_factor_lookahead = 0.5  # Scaling factor for speed
     
-    def setup(self, mav, port=None, baudrate=None):
+    def setup(self, mav, port='/dev/ttyUSB1'):
         self.vehicle.cleanup()
         self.mav = mav
-        self.gpsimu = GPSIMUReader()
+        self.gpsimu = GPSIMUReader(port=port)
         self.gpsimu.start()
         time.sleep(5)
         data = self.gpsimu.get_latest_output()
@@ -246,7 +242,13 @@ class RMPPIController:
                       backward_progress_penalty
                       )
         return total_cost, cumulative_heading_change, prev_index
-    
+
+    def send_current_location(self):
+        msg = self.mav.MAVLink_current_location_message(x_coordinate=self.state_real[0], y_coordinate=self.state_real[1], callsign=CALLSIGN.encode('ascii'))
+        self.mav.send(msg)
+        print(f"Sent current location: X={x}, Y={y}")
+
+
     def control(self):
         num_steps = len(self.path_x)
         prev_control = self.control_mean.copy()
@@ -254,23 +256,37 @@ class RMPPIController:
         # Initialize lists for plotting speed and theta over time
         speeds = []
         thetas = []
-        state = self.state_real
-
         path_taken = []
 
         print("num steps:", num_steps)
         final_x = self.path_x[-1]
         final_y = self.path_y[-1]
 
-        distance_from_end = np.sqrt((state[0] - final_x)**2 + (state[1] - final_y)**2)
+        distance_from_end = np.sqrt((self.state_real[0] - final_x)**2 + (self.state_real[1] - final_y)**2)
 
         t = 0
         prev_index = 0
         # while abs(distance_from_end) > 5 and not emergency_stop:  
-        while abs(distance_from_end) > 5:  
-            # Get the current state
-            state = self.state_real
-            current_speed = state[3]
+        while abs(distance_from_end) > 5:
+            if ser.in_waiting > 0:
+                c = ser.read(1)
+                msg = mav.parse_char(c)
+                if msg is not None:
+                    msg_type = msg.get_type()
+                    if msg_type == 'EMERGENCY_STOP' and msg.callsign == CALLSIGN:
+                        print(f"Received EMERGENCY_STOP from {msg.callsign}.")
+                        break  
+
+            cur_data = self.gpsimu.get_latest_output()
+            xy_data = self.gps_transformer.gps_to_xy(cur_data[0], cur_data[1])
+            self.state_real[0] = xy_data[0]
+            self.state_real[1] = xy_data[1]
+            self.state_real[2] = np.radians(initial_data[2])
+
+             # Send the current location to the ground station
+            self.send_current_location()
+        
+            current_speed = self.state_real[3]
 
             # Adjust prediction horizon based on speed
             self.T = self.adjust_prediction_horizon(current_speed)
@@ -279,7 +295,7 @@ class RMPPIController:
             lookahead_distance = self.compute_lookahead_distance(current_speed)
 
             # Find the closest path index
-            closest_index = self.find_closest_path_index(state[:2])
+            closest_index = self.find_closest_path_index(self.state_real[:2])
 
             # Compute target index with lookahead
             path_length = len(self.path_x)
@@ -288,7 +304,7 @@ class RMPPIController:
             target = np.array([self.path_x[target_index], self.path_y[target_index]])
             
             # Generate control sequences
-            position_error = np.linalg.norm(state[:2] - target)
+            position_error = np.linalg.norm(self.state_real[:2] - target)
             
             max_control_std = np.array([0.5, np.radians(5)])
             min_control_std = np.array([0.1, np.radians(1)])
@@ -309,7 +325,7 @@ class RMPPIController:
             costs = np.zeros(self.N)
             trajectories = []
             for n in range(self.N):
-                state_sim = state.copy()
+                state_sim = self.state.copy()
                 cost = 0.0
                 prev_u = prev_control.copy()
                 prev_delta_sim = prev_control[1]
@@ -360,19 +376,12 @@ class RMPPIController:
 
             # Move the vehicle based on the computed control inputs
             self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
-
-            # Send the current location to the ground station
-            send_current_location(self.mav, self.state_real[0], self.state_real[1])
             
-            # Update the real state based on the control inputs
+
+
+            # Update the real state to next state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
         
-            initial_data = self.gpsimu.get_latest_output()
-            xy_data = self.gps_transformer.gps_to_xy(initial_data[0], initial_data[1])
-            self.state_real[0] = xy_data[0]
-            self.state_real[1] = xy_data[1]
-            self.state_real[2] = np.radians(initial_data[2])
-
             self.previous_delta = delta_new_real
 
             prev_control = self.control_mean.copy()
@@ -389,6 +398,7 @@ class RMPPIController:
             distance_from_end = np.sqrt((state[0] - final_x)**2 + (state[1] - final_y)**2)
 
             t += 1
+        
         self.vehicle.cleanup()
 
     def simulate_control(self):

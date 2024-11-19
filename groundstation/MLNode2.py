@@ -5,6 +5,7 @@ from threading import Thread, Event
 from Mavlink import MAVLink, MAVLink_waypoint_list_message, MAVLink_start_mission_message
 from utils import generate_path_from_waypoints
 import numpy as np
+import matplotlib.pyplot as plt
 
 SERIAL_PORT = '/dev/ttyUSB0'
 BAUD_RATE = 57600
@@ -73,28 +74,43 @@ mav.send(msg)
 plt.figure()
 plt.ion()
 plt.show()
+t = 0
 
-while True:
-    plt.cla()
-    plt.plot(path_x, path_y, 'r--', label='Target Path' if t == 0 else "")
-    plt.plot(real_x, real_y, 'ro', label='Real Path' if t == 0 else "")
-    plt.pause(0.01)
-    if ser.in_waiting > 0:
-        c = ser.read(1)
-        msg = mav.parse_char(c)
-        if msg is not None:
-            msg_type = msg.get_type()
-            if msg_type == 'CURRENT_LOCATION':
-                real_x.append(msg.x_coordinate)
-                real_y.append(msg.y_coordinate)
+try:
+    while True:
+        plt.cla()
+        plt.plot(path_x, path_y, 'r--', label='Target Path' if t == 0 else "")
+        plt.plot(real_x, real_y, 'ro', label='Real Path' if t == 0 else "")
+        plt.pause(0.01)
+        if ser.in_waiting > 0:
+            c = ser.read(1)
+            msg = mav.parse_char(c)
+            if msg is not None:
+                msg_type = msg.get_type()
+                if msg_type == 'CURRENT_LOCATION':
+                    print(msg)
+                    real_x.append(msg.x_coordinate)
+                    real_y.append(msg.y_coordinate)
 
-        if mission_started == True:
-            break
-
-plt.legend()
-plt.ioff()
-plt.show()
-
+            if mission_started == True:
+                break
+        t+=1
+    plt.legend()
+    plt.ioff()
+    plt.show()
+except KeyboardInterrupt:
+    msg = MAVLink_emergency_stop_message(callsign=CALLSIGN.encode('ascii'))
+    mav.send(msg)
+    time.sleep(0.1)
+ 
+    ser.close()
+    print("Serial port closed.")
+ 
+    plt.ioff()
+    plt.show()
+    print("Plot closed.")
+ 
+    raise
 
 
 
