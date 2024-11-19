@@ -2,7 +2,7 @@
 import time
 import serial
 from threading import Thread, Event
-from Mavlink import MAVLink, MAVLink_waypoint_list_message, MAVLink_start_mission_message
+from Mavlink import MAVLink, MAVLink_waypoint_list_message, MAVLink_start_mission_message, MAVLink_emergency_stop_message
 from utils import generate_path_from_waypoints
 import numpy as np
 import matplotlib.pyplot as plt
@@ -91,14 +91,14 @@ try:
                     print(msg)
                     real_x.append(msg.x_coordinate)
                     real_y.append(msg.y_coordinate)
+            
 
-            if mission_started == True:
-                break
         t+=1
-    plt.legend()
-    plt.ioff()
-    plt.show()
+
 except KeyboardInterrupt:
+    print("Keyboard Interrupt")
+
+finally:
     msg = MAVLink_emergency_stop_message(callsign=CALLSIGN.encode('ascii'))
     mav.send(msg)
     time.sleep(0.1)
@@ -109,8 +109,7 @@ except KeyboardInterrupt:
     plt.ioff()
     plt.show()
     print("Plot closed.")
- 
-    raise
+
 
 
 
