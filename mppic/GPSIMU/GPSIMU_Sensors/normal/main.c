@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
                 printf("%.3f,%.3f,%.3f,", fAngle[0], fAngle[1], fAngle[2]);   // Angle
                 printf("%d,%d,%d,", mag[0], mag[1], mag[2]);                  // Magnetometer
                 printf("%.2f,", temp);                                        // Temperature
-                printf("%d %.5f,%d %.5f\n", lon_degrees, lat_degrees); // GPS
+                printf("%.5f,%.5f\n", lon_degrees, lat_degrees); // GPS
 
                 
                 s_cDataUpdate = 0;
