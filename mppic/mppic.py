@@ -285,7 +285,7 @@ class RMPPIController:
             xy_data = self.gps_transformer.gps_to_xy(cur_data[0], cur_data[1])
             self.state_real[0] = xy_data[0]
             self.state_real[1] = xy_data[1]
-            self.state_real[2] = np.radians(initial_data[2])
+            self.state_real[2] = np.radians(cur_data[2])
 
              # Send the current location to the ground station
             self.send_current_location()
