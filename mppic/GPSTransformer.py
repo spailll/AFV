@@ -8,9 +8,13 @@ class GPSCoordinateTransformer:
     def __init__(self, init_lat, init_lon):
         self.init_lat = math.radians(init_lat)
         self.init_lon = math.radians(init_lon)
+        print("Initial Latitude: ", self.init_lat)
+        print("Initial Longitude: ", self.init_lon)
         self.R = 6371000.0  # Earth radius in meters
 
     def gps_to_xy(self, lat, lon):
+        print("Latitude: ", lat)
+        print("Longitude: ", lon)
         lat_rad = math.radians(lat)
         lon_rad = math.radians(lon)
 
