@@ -250,7 +250,7 @@ class RMPPIController:
     def send_current_location(self):
         msg = MAVLink_current_location_message(x_coordinate=self.state_real[0], y_coordinate=self.state_real[1], callsign=CALLSIGN.encode('ascii'))
         self.mav.send(msg)
-        print(f"Sent current location: X={x}, Y={y}")
+        print(f"Sent current location: X={self.state_real[0]}, Y={self.state_real[1]}")
 
 
     def control(self):
