@@ -87,7 +87,9 @@ class RMPPIController:
         self.gpsimu = GPSIMUReader(port=port)
         self.gpsimu.start()
         time.sleep(5)
-        data = self.gpsimu.get_latest_output()
+        data = None
+        while data is None:
+            data = self.gpsimu.get_latest_output()
         self.gps_transformer = GPSCoordinateTransformer(init_lat=data[0], init_lon=data[1])
         time.sleep(0.25)
 
