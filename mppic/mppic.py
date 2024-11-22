@@ -535,7 +535,7 @@ class RMPPIController:
             self.control_mean[1] = np.clip(self.control_mean[1], self.vehicle.delta_min, self.vehicle.delta_max)
 
             # Move the vehicle based on the computed control inputs
-            # self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
+            self.vehicle.move(self.control_mean[0], np.degrees(self.control_mean[1]))
             
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
