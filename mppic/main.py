@@ -35,7 +35,7 @@ def handle_waypoint_list(msg):
     for idx, wp in enumerate(waypoints):
         print(f"Waypoint {idx+1}: X={wp[0]}, Y={wp[1]}")
 
-def main():
+def main_real():
     try:
         ser = serial.Serial(SERIAL_PORT_RF, BAUD_RATE, timeout=0.01)
     except serial.SerialException as e:
@@ -58,7 +58,6 @@ def main():
                         break
                     print(f"Received START_MISSION from {msg.callsign}. Ignoring.")
 
-
     path_x, path_y = generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20)
     print(path_x, path_y)
 
@@ -71,8 +70,25 @@ def main():
     controller.setup(mav, ser, port=SERIAL_PORT_IMU)
     
     # Simulate control and follow the path
-    controller.control()
+    controller.simulate_control()
 
     ser.close()
+
+def main():
+    waypoints = [[0, 0], [0, 10], [10, 10], [10, 20], [20, 20]]
+
+    path_x, path_y = generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20)
+    print(path_x, path_y)
+
+    if path_x is None or path_y is None:
+        print("Failed to generate path from waypoints.")
+        return
+
+    # Initialize the RMPPI controller
+    controller = RMPPIController(path_x, path_y, mav)
+    
+    # Simulate control and follow the path
+    controller.simulate_control()
+
 if __name__ == '__main__':
     main()
