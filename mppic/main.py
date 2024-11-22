@@ -16,7 +16,7 @@ SERIAL_PORT_IMU = '/dev/ttyUSB1'
 BAUD_RATE = 57600
 CALLSIGN = 'KJ5IOJ'
 
-waypoints = []
+# waypoints = []
 
 def handle_waypoint_list(msg):
     if msg.callsign != CALLSIGN:
@@ -66,7 +66,7 @@ def main_real():
         return
 
     # Initialize the RMPPI controller
-    controller = RMPPIController(path_x, path_y, mav)
+    controller = RMPPIController(path_x, path_y)
     controller.setup(mav, ser, port=SERIAL_PORT_IMU)
     
     # Simulate control and follow the path
@@ -75,7 +75,8 @@ def main_real():
     ser.close()
 
 def main():
-    waypoints = [[0, 0], [0, 10], [10, 10], [10, 20], [20, 20]]
+    time.sleep(10)
+    waypoints = [[0, 0], [50, 0], [50, 50], [100, 50], [100, 100]]
 
     path_x, path_y = generate_path_from_waypoints(waypoints, corner_radius=5.0, num_points_per_arc=20)
     print(path_x, path_y)
@@ -85,7 +86,7 @@ def main():
         return
 
     # Initialize the RMPPI controller
-    controller = RMPPIController(path_x, path_y, mav)
+    controller = RMPPIController(path_x, path_y)
     
     # Simulate control and follow the path
     controller.simulate_control()

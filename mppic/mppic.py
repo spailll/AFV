@@ -417,6 +417,8 @@ class RMPPIController:
         # Initialize lists for plotting speed and theta over time
         speeds = []
         thetas = []
+        path_taken = []
+
         state = self.state_real
 
         print("num steps:", num_steps)
@@ -492,6 +494,8 @@ class RMPPIController:
                 costs[n] = cost
                 trajectories.append(trajectory)
             
+            plt.clf()
+            plt.plot(self.path_x, self.path_y, 'r-', label='Path')
             # Plot all trajectories
             for trajectory in trajectories:
                 traj = np.array(trajectory)
@@ -500,12 +504,12 @@ class RMPPIController:
             path_taken.append(self.state_real[:2].copy())
             if len(path_taken) > 1:
                 path_taken_array = np.array(path_taken)
-                plt.plot(path_taken_array[:, 0], path_taken_array[:, 1], 'b-', alpha=0.5)
+                plt.plot(path_taken_array[:, 0], path_taken_array[:, 1], 'b-', alpha=0.5, linewidth=5)
 
             best_index = np.argmin(costs)
             best_trajectory = trajectories[best_index]
             best_traj = np.array(best_trajectory)
-            plt.plot(best_traj[:, 0], best_traj[:, 1], 'b-', label='Best Path' if t == 0 else "")
+            plt.plot(best_traj[:, 0], best_traj[:, 1], 'b-', linewidth=3, label='Best Path' if t == 0 else "")
 
             # Compute weights
             beta = np.min(costs)
@@ -535,22 +539,19 @@ class RMPPIController:
             
             # Update the real state based on the control inputs
             self.state_real, delta_new_real = self.dynamics(self.state_real, self.control_mean, self.previous_delta)
-        
-            initial_data = self.gpsimu.get_latest_output()
-            xy_data = self.gps_transformer.gps_to_xy(initial_data[0], initial_data[1])
-            self.state_real[0] = xy_data[0]
-            self.state_real[1] = xy_data[1]
-            self.state_real[2] = np.radians(initial_data[2])
-
             self.previous_delta = delta_new_real
-
             prev_control = self.control_mean.copy()
 
             # Record speed and theta for plotting
             speeds.append(self.state_real[3])
             thetas.append(self.state_real[2])
 
+            # Plot the real system's current position at each time step
             plt.plot(self.state_real[0], self.state_real[1], 'ro', label='Real Path' if t == 0 else "")
+
+            # Adding speed and angle indicator
+            plt.text(5, 90, f"Velocity: {self.state_real[3]:.3f} m/s", fontsize=36, color='black')
+            plt.text(5, 85, f"Theta: {np.degrees(self.state_real[2]):.3f} degrees", fontsize=36, color='black')
 
             # Print debug information
             print(f"Time step { t }:")
