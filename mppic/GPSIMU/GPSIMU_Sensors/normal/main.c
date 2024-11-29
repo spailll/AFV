@@ -3,17 +3,15 @@
 #include "REG.h"
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h> // For usleep
+#include <unistd.h>
 
 #define ACC_UPDATE 0x0001
 #define GYRO_UPDATE 0x0002
 #define ANGLE_UPDATE 0x0004
 #define MAG_UPDATE 0x0008
 #define TEMP_UPDATE 0x0010
-#define LonL_UPDATE 0x49
-#define LonH_UPDATE 0x4a
-#define LatL_UPDATE 0x4b
-#define LatH_UPDATE 0x4c
+#define LON_UPDATE 0x0020
+#define LAT_UPDATE 0x0040
 #define READ_UPDATE 0x8000
 
 static int fd, s_iCurBaud = 9600;
@@ -41,8 +39,7 @@ int main(int argc, char *argv[])
 
     float fAcc[3], fGyro[3], fAngle[3], temp;
     int32_t lon, lat;
-    int lon_degrees, lat_degrees;
-    float lon_minutes, lat_minutes;
+    float longitude, latitude;
     int i;
     char cBuff[1];
 
@@ -66,11 +63,11 @@ int main(int argc, char *argv[])
         {
             if ((s_cDataUpdate & ACC_UPDATE) && (s_cDataUpdate & GYRO_UPDATE) &&
                 (s_cDataUpdate & ANGLE_UPDATE) && (s_cDataUpdate & MAG_UPDATE) &&
-                (s_cDataUpdate & TEMP_UPDATE) && (s_cDataUpdate & LonL_UPDATE) &&
-                (s_cDataUpdate & LonH_UPDATE) && (s_cDataUpdate & LatL_UPDATE) && (s_cDataUpdate & LatH_UPDATE))
+                (s_cDataUpdate & TEMP_UPDATE) && (s_cDataUpdate & LON_UPDATE) &&
+                (s_cDataUpdate & LAT_UPDATE))
             {
 
-                // Process accelerometer data
+                // extract accelerometer data
                 for (i = 0; i < 3; i++)
                 {
                     fAcc[i] = sReg[AX + i] / 32768.0f * 16.0f;
@@ -78,35 +75,42 @@ int main(int argc, char *argv[])
                     fAngle[i] = sReg[Roll + i] / 32768.0f * 180.0f;
                 }
 
-                // Process magnetometer data
+                // extract magnetometer data
                 int16_t mag[3];
                 for (i = 0; i < 3; i++)
                 {
                     mag[i] = sReg[HX + i];
                 }
 
-                // Process temperature
+                // extract temperature
                 temp = sReg[TEMP] / 100.0f;
 
-                // Process longitude and latitude
+                // extract lon and lat
                 lon = ((int32_t)(uint16_t)sReg[LonH] << 16) | (uint16_t)sReg[LonL];
                 lat = ((int32_t)(uint16_t)sReg[LatH] << 16) | (uint16_t)sReg[LatL];
 
-                lon_degrees = lon / 10000000;
-                lon_minutes = (lon % 10000000) / 100000.0f;
+                // Convert the raw data to degrees
+                longitude = lon / 10000000.0;
+                latitude = lat / 10000000.0;
 
-                lat_degrees = lat / 10000000;
-                lat_minutes = (lat % 10000000) / 100000.0f;
+                /* check if values for lon and lat are signed, if value is negative, the if statement will be triggered and will
+                do twos complements on the value to represent it correctly*/ 
+                if (lon & 0x80000000) {
+                    longitude = -((~lon + 1) / 10000000.0);
+                }
+                if (lat & 0x80000000) {
+                    latitude = -((~lat + 1) / 10000000.0);
+                }
 
-                // Print data in CSV format
+                // print data in CSV
                 printf("%.3f,%.3f,%.3f,", fAcc[0], fAcc[1], fAcc[2]);       // Acceleration
                 printf("%.3f,%.3f,%.3f,", fGyro[0], fGyro[1], fGyro[2]);    // Gyroscope
                 printf("%.3f,%.3f,%.3f,", fAngle[0], fAngle[1], fAngle[2]); // Angle
                 printf("%d,%d,%d,", mag[0], mag[1], mag[2]);                // Magnetometer
                 printf("%.2f,", temp);                                      // Temperature
-                printf("%.5f, %.5f\n", lon_degrees, lat_degrees);           // GPS.
+                printf("%.6f, %.6f\n", longitude, latitude);                // Longitude and Latitude in degrees
 
-                // Clear all update flags after printing
+                // clear all update flags after printing
                 s_cDataUpdate = 0;
             }
         }
@@ -139,16 +143,12 @@ static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum)
             s_cDataUpdate |= TEMP_UPDATE;
             break;
         case LonL:
-            s_cDataUpdate |= LonL;
-            break;
         case LonH:
-            s_cDataUpdate |= LonH;
+            s_cDataUpdate |= LON_UPDATE;
             break;
         case LatL:
-            s_cDataUpdate |= LatL;
-            break;
         case LatH:
-            s_cDataUpdate |= LatH;
+            s_cDataUpdate |= LAT_UPDATE;
             break;
         default:
             s_cDataUpdate |= READ_UPDATE;
