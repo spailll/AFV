@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     AutoScanSensor(argv[1]);
 
     // Print CSV headers
-    // printf("AccX,AccY,AccZ,GyroX,GyroY,GyroZ,AngleX,AngleY,AngleZ,MagX,MagY,MagZ,Temp,Longitude,Latitude\n");
+    //AccX,AccY,AccZ,GyroX,GyroY,GyroZ,AngleX,AngleY,AngleZ,MagX,MagY,MagZ,Temp,Longitude,Latitude
 
     while (1)
     {
